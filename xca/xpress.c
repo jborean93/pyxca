@@ -2398,6 +2398,7 @@ Return Value:
         // checks.
         //
 
+        // TODO: Can we do 'min(OutputPos + HUFFMAN_BLOCK_SIZE, OutputEnd)'
         HuffBlockEnd = OutputPos + HUFFMAN_BLOCK_SIZE;
 
         if (HuffBlockEnd > OutputEnd) {
@@ -2409,7 +2410,9 @@ Return Value:
         // checking) * (16 one-bit symbols per USHORT between bound checks).
         //
 
-        SafeHuffBlockEnd = HuffBlockEnd - 11 * 17 - 1;
+        // TODO: This seems to be broken.
+        //SafeHuffBlockEnd = HuffBlockEnd - 11 * 17 - 1;
+        SafeHuffBlockEnd = HuffBlockEnd;
 
         if (OutputPos >= SafeHuffBlockEnd) {
             goto SafeDecode;

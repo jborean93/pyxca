@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+import setuptools
+import sys
+
+from Cython.Build import cythonize
+from distutils.core import setup, Extension
+    
+try:
+    sys.argv.remove('--cython-linetrace')
+    cython_linetrace = True
+except ValueError:
+    cython_linetrace = False
+
+extensions = cythonize([
+    Extension(name='jordan', sources=['xca/jordan.pyx', 'xca/xpress.c']),
+], language_level=3, compiler_directives={'linetrace': cython_linetrace})
+
+setup(
+    name='xca',
+    version='1.0.0',
+    description='Python wrapper for Microsoft xpress compession',
+    author='Jordan Borean',
+    author_email='jborean93@gmail.com',
+    packages=[
+        'xca',
+        'xca.jordan',
+    ],
+    ext_modules=extensions,
+)

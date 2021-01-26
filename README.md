@@ -19,7 +19,13 @@ While the code has been tested against a WinRS response I'm hoping to see if it'
 # Compile
 
 ```bash
-gcc -shared -o libxpress.so -fPIC src/xpress.c
+CFLAGS='-Wall -O0 -g' gcc -shared -o libxpress.so -fPIC xca/xpress.c
+
+# Compile cython code
+python setup.py clean --all build_ext --inplace
+
+# Create debug binary
+CFLAGS='-Wall -O0 -g' python setup.py clean --all build_ext --inplace
 
 # nm -gD libxpress.so
 ```

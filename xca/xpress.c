@@ -2411,8 +2411,8 @@ Return Value:
         //
 
         // TODO: This seems to be broken.
-        //SafeHuffBlockEnd = HuffBlockEnd - 11 * 17 - 1;
-        SafeHuffBlockEnd = HuffBlockEnd;
+        SafeHuffBlockEnd = HuffBlockEnd - 11 * 17 - 1;
+        //SafeHuffBlockEnd = HuffBlockEnd;
 
         if (OutputPos >= SafeHuffBlockEnd) {
             goto SafeDecode;

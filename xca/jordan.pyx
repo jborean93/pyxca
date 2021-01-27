@@ -17,7 +17,8 @@ cdef class XpressWorkspace:
             raise MemoryError()
 
     def __dealloc__(XpressWorkspace self):
-        free(self.buffer)
+        if self.buffer:
+            free(self.buffer)
 
     @staticmethod
     def compressor() -> XpressWorkspace:

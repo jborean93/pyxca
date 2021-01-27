@@ -6,25 +6,27 @@ import uuid
 import xca
 
 
-expected = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
-compressed = base64.b16decode('00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a8dc0000ff2601'.upper())
+def example_xpress():
+    expected = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
+    compressed = base64.b16decode('00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a8dc0000ff2601'.upper())
 
-plaintext_length = 300
+    plaintext_length = 300
 
-compressed_buffer = bytearray(compressed)
-decompressed_buffer = bytearray(plaintext_length)
-workspace = xca.XpressWorkspace.decompressor()
+    compressed_buffer = bytearray(compressed)
+    decompressed_buffer = bytearray(plaintext_length)
+    workspace = xca.XpressWorkspace.decompressor()
 
-final_size = xca.decompress_buffer_progress(
-    compressed_buffer,
-    decompressed_buffer,
-    workspace,
-)
+    final_size = xca.decompress_buffer_progress(
+        compressed_buffer,
+        decompressed_buffer,
+        workspace,
+    )
 
-actual = bytes(decompressed_buffer[:final_size])
-assert actual == expected
+    actual = bytes(decompressed_buffer[:final_size])
+    assert actual == expected
 
-# sys.exit(0)
+# example_xpress()
+# example_xpress()
 
 
 Fragment = collections.namedtuple('Fragment', ['object_id', 'fragment_id', 'start', 'end', 'data'])
@@ -101,25 +103,23 @@ responses = [
 
 decompressed = []
 workspace = xca.XpressWorkspace.decompressor()
+
 for resp in responses:
     data = base64.b64decode(resp)
 
     to_size = struct.unpack('<H', data[0:2])[0] + 1
     from_size = struct.unpack('<H', data[2:4])[0] + 1
-    #to_size = 300
-    #from_size = len(data)
 
     if to_size == from_size:
         decompressed.append(data[4:])
         continue
 
     from_buffer = bytearray(data[4:from_size + 4])
-    #from_buffer = bytearray(data)
     to_buffer = bytearray(to_size)
 
     final_size = xca.decompress_buffer_progress(
         from_buffer,
-        to_buffer,
+        memoryview(to_buffer),
         workspace,
     )
 

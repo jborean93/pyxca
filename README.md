@@ -29,3 +29,8 @@ CFLAGS='-Wall -O0 -g' python setup.py clean --all build_ext --inplace
 
 # nm -gD libxpress.so
 ```
+
+
+# Other Info
+
+Python code to compress on Windows https://gist.github.com/cristian-bicheru/2375befeac75b01d095f3da8727f979b.

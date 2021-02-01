@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import base64
 import collections
 import sys
@@ -10,23 +12,13 @@ def example_xpress():
     expected = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
     compressed = base64.b16decode('00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a8dc0000ff2601'.upper())
 
-    plaintext_length = 300
+    decompressor = xca.XpressWorkspace.decompressor()
+    actual = xca.decompress(decompressor, compressed, 300)
 
-    compressed_buffer = bytearray(compressed)
-    decompressed_buffer = bytearray(plaintext_length)
-    workspace = xca.XpressWorkspace.decompressor()
-
-    final_size = xca.decompress_buffer_progress(
-        compressed_buffer,
-        decompressed_buffer,
-        workspace,
-    )
-
-    actual = bytes(decompressed_buffer[:final_size])
     assert actual == expected
 
-# example_xpress()
-# example_xpress()
+example_xpress()
+example_xpress()
 
 
 Fragment = collections.namedtuple('Fragment', ['object_id', 'fragment_id', 'start', 'end', 'data'])
@@ -102,7 +94,7 @@ responses = [
 # 32767:268
 
 decompressed = []
-workspace = xca.XpressWorkspace.decompressor()
+decompressor = xca.XpressWorkspace.decompressor()
 
 for resp in responses:
     data = base64.b64decode(resp)
@@ -114,18 +106,7 @@ for resp in responses:
         decompressed.append(data[4:])
         continue
 
-    from_buffer = bytearray(data[4:from_size + 4])
-    to_buffer = bytearray(to_size)
-
-    final_size = xca.decompress_buffer_progress(
-        from_buffer,
-        memoryview(to_buffer),
-        workspace,
-    )
-
-    decompressed_data = bytes(to_buffer[:final_size])
-    if to_buffer.endswith(b'\x00'):
-        a = ''
+    decompressed_data = xca.decompress(decompressor, data[4:from_size + 4], to_size)
     decompressed.append(decompressed_data)
 
 
@@ -146,12 +127,8 @@ for data in decompressed:
         messages.append(msg)
 
 
-expected = f'<S>{"hi" * 65536}</S>'
+expected = f'<S>{"hi" * 65536}</S>'.encode()
 actual = bytes(messages[0].data)
-
-print(len(actual))
-print(len(expected))
-print(actual)
 
 assert len(actual) == len(expected)
 assert actual == expected

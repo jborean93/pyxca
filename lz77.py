@@ -1,5 +1,6 @@
 import base64
 import struct
+import zlib
 
 
 def compress(
@@ -148,13 +149,16 @@ def decompress(
 
 
 decompressed = b'abcdefghijklmnopqrstuvwxyz'
-compressed = base64.b16decode('3f0000006162636465666768696a6b6c6d6e6f707172737475767778797a'.upper())
+compressed = b'\x3f\x00\x00\x00\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a'
 
 actual = decompress(compressed)
 assert actual == decompressed
 
+actual = zlib.decompress(compressed)
+assert actual == decompressed
+
 decompressed = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
-compressed = base64.b16decode('ffffff1f61626317000fff2601'.upper())
+compressed = b'\xff\xff\xff\x1f\x61\x62\x63\x17\x00\x0f\xff\x26\x01'
 
 actual = decompress(compressed)
 assert actual == decompressed
@@ -251,5 +255,4 @@ assert actual == decompressed
  Flags |= (1 << (32 – FlagCount)) - 1
  Write the 32-bit value Flags to FlagOutputPosition
  The final compressed size is the value of OutputPosition
-''''
-
+'''

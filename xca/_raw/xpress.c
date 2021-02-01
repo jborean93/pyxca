@@ -2311,6 +2311,7 @@ Return Value:
     LONG_PTR DecodedBitCount;
     void* AlignedWorkspace;
     XPRESS_CALLBACK_PARAMS CallbackParams;
+    ULONG_PTR OverlappedLength;
 
     //
     // Make sure our Workspace pointer is pointer-aligned.
@@ -2669,8 +2670,8 @@ Return Value:
                     OutputPos[0] = MatchSrc[0];
                     OutputPos[1] = MatchSrc[1];
                     OutputPos[2] = MatchSrc[2];
-                    OutputPos += 3;
                     MatchLen -= 3;
+                    OutputPos += 3;
                     break;
                 default:
                     __assume(0);
@@ -2715,8 +2716,24 @@ Return Value:
                                 return STATUS_BAD_COMPRESSION_BUFFER;
                             }
 
-                            memcpy(OutputPos, MatchSrc, MatchLen);
-                            OutputPos += MatchLen;
+                            // Original had which didn't work because OutputPos could be within (MatchSrc + MatchLen)
+                            // causing the wrong memory to be copied.
+                            // memcpy(OutputPos, MatchSrc, MatchLen);
+                            // OutputPos += MatchLen;
+
+                            // Need to be careful with overlapped memory.
+                            // TODO: Make sure MatchSrc has size_t bytes written and copy in those chunks
+                            OverlappedLength = OutputPos - MatchSrc;
+                            while (OutputPos < OutputEnd)
+                            {
+                                if (OverlappedLength > MatchLen)
+                                    OverlappedLength = MatchLen;
+
+                                memcpy(OutputPos, MatchSrc, OverlappedLength);
+                                OutputPos += OverlappedLength;
+                                MatchSrc += OverlappedLength;
+                                MatchLen -= OverlappedLength;
+                            }
 
                             goto SafeDecode;
                         }

@@ -114,9 +114,6 @@ def decompress_buffer_progress(
     if res != 0:
         raise Exception('failure: %s' % res)
 
-    #print(final_size)
-
-    #return <bytes>(to_buffer[:final_size])
     return final_size
 
 

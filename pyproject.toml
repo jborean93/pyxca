@@ -40,7 +40,8 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 testpaths = "tests"
-addopts = "--import-mode=importlib"
+# Would like to use importlib but https://github.com/pytest-dev/pytest/issues/8964
+#addopts = "--import-mode=prepend"
 junit_family = "xunit2"
 
 [tool.tox]

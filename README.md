@@ -1,36 +1,78 @@
-# xpress library for Python
+# Xpress Compression Library for Python
+
+[![Test workflow](https://github.com/jborean93/pyxca/actions/workflows/ci.yml/badge.svg)](https://github.com/jborean93/pyxca/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/pyxca.svg)](https://badge.fury.io/py/pyxca)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jborean93/pyxca/blob/main/LICENSE)
 
 Implements Microsoft xpress compression for Python.
-This is used by WinRM and SMB and is designed to expose an optimised library to compress/decompress data for libraries that implement those protocols.
+The Xpress algorithm is defined under [MS-XCA](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-xca/a8b7cb0a-92a6-4187-a23b-5e14273b96f8) and encompasses 3 different algorithms
 
-There is an MIT licensed source for this algorithm at https://github.com/PowerShell/psl-omi-provider/blob/master/src/xpress.c.
-My aim is to make this a standalone library that can be called in Python through something like Cython.
-While the code has been tested against a WinRS response I'm hoping to see if it's also applicable for [SMB compression](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/78e0c942-ab41-472b-b117-4a95ebe88271) potentially it's LZ77+Huffman.
+* LZ77 - Not implemented
+* LZ77 + Huffman - Implemented
+* LZNT1 - Not implemented
 
-# TODO
+Currently only the Xpress + Huffman algorithm is implemented with the code being based on what Microsoft themselves has provided under the MIT license.
 
-* extract xpress.c/xpress.h into a self compiled library
-* tidy up xpress.c to remove extra cruft (do I actually want to do this?)
-* create interface in Python to call these now public functions
-* look at converting to cython
-* create python library
+> :warning: **This library is experimental and is subject to change**: Be very careful here!
 
+## Requirements
 
-# Compile
+* Python 3.6+
+* A C compiler, such as GCC
+
+The compiler is only needed if installing from source/sdist, if using the wheel from PyPI then it should not be needed.
+
+## Installation
+
+Simply run:
 
 ```bash
-CFLAGS='-Wall -O0 -g' gcc -shared -o libxpress.so -fPIC xca/xpress.c
-
-# Compile cython code
-python setup.py clean --all build_ext --inplace
-
-# Create debug binary
-CFLAGS='-Wall -O0 -g' python setup.py clean --all build_ext --inplace
-
-# nm -gD libxpress.so
+pip install xca
 ```
 
+To install from source run the following:
 
-# Other Info
+```bash
+git clone https://github.com/jborean93/pyxca.git
+pip install Cython
+python setup.py bdist_wheel
+pip install dist/xca-*.whl
+```
 
-Python code to compress on Windows https://gist.github.com/cristian-bicheru/2375befeac75b01d095f3da8727f979b.
+## Development
+
+To run the tests or make changes to this repo run the following:
+
+```bash
+git clone https://github.com/jborean93/pyxca.git
+pip install -r requirements-dev.txt
+pre-commit install
+
+python setup.py build_ext --inplace
+```
+
+This will build the Cython and C code inplace where it can be imported by Python.
+From there an editor like VSCode can be used to make changes and run the test suite.
+To recompile the Cython files after a change run the `build_ext --inplace` command.
+
+## Examples
+
+
+
+```python
+import xca
+
+data = b"Hello World" * 1024
+workspace = xca.XpressHuffman()
+
+compressed_data = workspace.compress(data)
+
+# The length of the plaintext should be communicated in some way to the decompressor
+decompressed_data = workspace.decompress(compress_data, len(data))
+```
+
+## Backlog
+
+* Implement Xpress/LZ77
+* Implement LZNT1
+* Do some performance testing

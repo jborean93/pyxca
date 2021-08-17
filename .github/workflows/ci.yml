@@ -1,0 +1,248 @@
+name: Test pyxca
+on:
+  push:
+    branches:
+    - main
+    paths-ignore:
+    - CHANGELOG.md
+    - LICENSE
+    - LICENSE_MS
+    - README.md
+
+  pull_request:
+    branches:
+    - main
+    paths-ignore:
+    - CHANGELOG.md
+    - LICENSE
+    - LICENSE_MS
+    - README.md
+
+  release:
+    types:
+    - published
+
+  schedule:
+  - cron: 0 9 * * *
+
+jobs:
+  build:
+    name: build sdist
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: install build pre-requisites
+      run: pip install setuptools Cython
+
+    - name: build sdist
+      run: python setup.py sdist
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: artifact
+        path: ./dist/*.tar.gz
+
+  build_wheels:
+    name: build wheels
+    needs:
+    - build
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: macOS-10.15
+          version: cp36-macosx_x86_64
+        - os: macOS-10.15
+          version: cp37-macosx_x86_64
+        - os: macOS-10.15
+          version: cp38-macosx_x86_64
+        - os: macOS-10.15
+          version: cp38-macosx_arm64
+        - os: macOS-10.15
+          version: cp39-macosx_x86_64
+        - os: macOS-10.15
+          version: cp39-macosx_arm64
+        - os: windows-2019
+          version: cp36-win_amd64
+        - os: windows-2019
+          version: cp36-win32
+        - os: windows-2019
+          version: cp37-win_amd64
+        - os: windows-2019
+          version: cp37-win32
+        - os: windows-2019
+          version: cp38-win_amd64
+        - os: windows-2019
+          version: cp38-win32
+        - os: windows-2019
+          version: cp39-win_amd64
+        - os: windows-2019
+          version: cp39-win32
+        - os: ubuntu-20.04
+          version: cp36-manylinux_x86_64
+        - os: ubuntu-20.04
+          version: cp36-manylinux_i686
+        - os: ubuntu-20.04
+          version: cp37-manylinux_x86_64
+        - os: ubuntu-20.04
+          version: cp37-manylinux_i686
+        - os: ubuntu-20.04
+          version: cp38-manylinux_x86_64
+        - os: ubuntu-20.04
+          version: cp38-manylinux_i686
+        - os: ubuntu-20.04
+          version: cp39-manylinux_x86_64
+        - os: ubuntu-20.04
+          version: cp39-manylinux_i686
+
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: ./
+
+    - name: extract sdist - windows
+      if: startsWith(matrix.os, 'windows-')
+      run: |
+        Get-Item xca-*.tar.gz | ForEach-Object { tar -xzf $_.Fullname }
+        Move-Item xca-*/* .
+        Remove-Item -Path xca-*/ -Force -Recurse
+        Remove-Item -Path xca-*.tar.gz -Force
+
+    - name: extract sdist - non-windows
+      if: "!startsWith(matrix.os, 'windows-')"
+      run: |
+        tar xf xca-*.tar.gz
+        mv xca-*/* .
+        rm -r xca-*/
+        rm xca-*.tar.gz
+
+    - name: build wheel
+      uses: pypa/cibuildwheel@v2.1.1
+      env:
+        CIBW_ARCHS: all
+        CIBW_TEST_SKIP: '*_arm64'
+        CIBW_BUILD: ${{ matrix.version }}
+        CIBW_BUILD_VERBOSITY: 1
+
+    - uses: actions/upload-artifact@v2
+      with:
+        path: ./wheelhouse/*.whl
+        name: artifact
+
+  test:
+    name: test
+    needs:
+    - build
+    - build_wheels
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macOS-latest
+        - windows-latest
+        python-version:
+        - 3.6
+        - 3.7
+        - 3.8
+        - 3.9
+        python-arch:
+        - x86
+        - x64
+
+        exclude:
+        - os: ubuntu-latest
+          python-arch: x86
+        - os: macOS-latest
+          python-arch: x86
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.python-arch }}
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: ./dist
+
+    - name: Test
+      run: |
+        echo "::group::Installing Python Requirements"
+
+        python -m pip install --upgrade pip setuptools wheel
+
+        echo "Installing pyxca"
+        if [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ]; then
+            DIST_LINK_PATH="$( echo "${PWD}/dist" | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' )"
+        else
+            DIST_LINK_PATH="${PWD}/dist"
+        fi
+        python -m pip install xca \
+            --no-index \
+            --find-links "file://${DIST_LINK_PATH}" \
+            --no-build-isolation \
+            --no-dependencies \
+            --verbose
+        python -m pip install xca
+
+        echo "Installing dev dependencies"
+        python -m pip install -r requirements-dev.txt
+
+        echo "::endgroup::"
+
+        echo "::group::Running Sanity Checks"
+
+        python -m black . --check
+        python -m isort . --check-only
+        python -m mypy .
+
+        echo "::endgroup::"
+
+        echo "::group::Running Tests"
+
+        python -m pytest -v --junitxml junit/test-results.xml --color=yes
+
+        echo "::endgroup::"
+      shell: bash
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Test Results (${{ matrix.os }} ${{ matrix.python-version }} ${{ matrix.python-arch }})
+        path: ./junit/test-results.xml
+
+  publish:
+    name: publish
+    needs:
+    - test
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v2
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: ./dist
+
+    - name: Publish
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}

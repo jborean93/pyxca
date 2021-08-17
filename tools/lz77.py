@@ -31,11 +31,14 @@ def compress(
             flags <<= 1
             flag_count += 1
             if flag_count == 32:
-                flags = struct.pack("<I", flags)
+                b_flags = struct.pack("<I", flags)
                 flag_count = 0
                 flag_output_position = output_position
                 output_position += 4
 
+            break
+
+        """
         else:  # A valid match was found
             match_length -= 3
             match_offset -= 1
@@ -44,13 +47,13 @@ def compress(
             if match_length < 7:
                 # This is the simple case. The length fits in 3 bits
                 match_offset += match_length
-                output_bytes[output_position:output_position + 2] = struct.pack("<H", match_offset)
+                output_bytes[output_position : output_position + 2] = struct.pack("<H", match_offset)
                 output_position += 2
 
             else:
                 # The length does not fit 3 bits. Record a special value to indicate a longer length.
                 match_offset |= 7
-                output_bytes[output_position:output_position + 2] = struct.pack("<H", match_offset)
+                output_bytes[output_position : output_position + 2] = struct.pack("<H", match_offset)
                 output_position += 2
 
                 match_length -= 7
@@ -68,10 +71,9 @@ def compress(
                 else:
                     if match_length < 15:
                         output_bytes[last_length_ha]
-                a = ''
-            a = ''
-
-        a = ''
+                a = ""
+            a = ""
+        """
 
     return bytes(output_bytes[:output_position])
 
@@ -86,11 +88,11 @@ def decompress(
     buffered_flag_count = 0
     input_position = 0
     output_position = 0
-    last_length_half_byte = 0
+    # last_length_half_byte = 0
 
     while True:
         if buffered_flag_count == 0:
-            buffered_flags = struct.unpack("<I", data[input_position:input_position + 4])[0]
+            buffered_flags = struct.unpack("<I", data[input_position : input_position + 4])[0]
             input_position += 4
             buffered_flag_count = 32
 
@@ -100,11 +102,14 @@ def decompress(
             output_position += 1
             input_position += 1
 
+        break
+
+        """
         else:
             if input_position == len(data):
                 break
 
-            match_bytes = struct.unpack("<H", data[input_position:input_position + 2])[0]
+            match_bytes = struct.unpack("<H", data[input_position : input_position + 2])[0]
             input_position += 2
             match_length = match_bytes % 8
             match_offset = (match_bytes // 8) + 1
@@ -126,16 +131,16 @@ def decompress(
                     input_position += 1
 
                     if match_length == 255:
-                        match_length = struct.unpack("<H", data[input_position:input_position + 2])[0]
+                        match_length = struct.unpack("<H", data[input_position : input_position + 2])[0]
                         input_position += 2
                         if match_length == 0:
-                            match_length = struct.unpack("<I", data[input_position:input_position + 4])[0]
+                            match_length = struct.unpack("<I", data[input_position : input_position + 4])[0]
                             input_position += 4
 
                         if match_length < (15 + 7):
                             raise Exception()
 
-                        match_length -= (15 + 7)
+                        match_length -= 15 + 7
 
                     match_length += 15
                 match_length += 7
@@ -145,26 +150,28 @@ def decompress(
                 output_bytes[output_position] = output_bytes[output_position - match_offset]
                 output_position += 1
 
+        """
+
     return bytes(output_bytes[:output_position])
 
 
-decompressed = b'abcdefghijklmnopqrstuvwxyz'
-compressed = b'\x3f\x00\x00\x00\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a'
+decompressed = b"abcdefghijklmnopqrstuvwxyz"
+compressed = b"\x3f\x00\x00\x00\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a"
 
 actual = decompress(compressed)
 assert actual == decompressed
 
-actual = zlib.decompress(compressed)
-assert actual == decompressed
+# actual = zlib.decompress(compressed)
+# assert actual == decompressed
 
-decompressed = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
-compressed = b'\xff\xff\xff\x1f\x61\x62\x63\x17\x00\x0f\xff\x26\x01'
+decompressed = b"abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc"
+compressed = b"\xff\xff\xff\x1f\x61\x62\x63\x17\x00\x0f\xff\x26\x01"
 
 actual = decompress(compressed)
 assert actual == decompressed
 
 
-'''
+"""
  Flags = 0      // this is a 32-bit integer value
  FlagCount = 0
  FlagOutputPosition = 0
@@ -199,7 +206,7 @@ assert actual == decompressed
              MatchOffset |= 7
              Write MatchOffset the 2-byte value to OutputPosition
              OutputPosition += 2
-  
+
              MatchLength -= 7
              // Try to encode the length in the next 4 bits. If we previously
              // encoded a 4-bit length, we'll use the high 4 bits from that byte.
@@ -223,7 +230,7 @@ assert actual == decompressed
                      // We've already used 3 bits + 4 bits to encode the length
                      // Next use the next byte.
                      MatchLength -= 15
-  
+
                      If MatchLength < 255
                          Write single byte value of MatchLength to OutputPosition
                          OutputPosition += 1
@@ -231,9 +238,9 @@ assert actual == decompressed
                          // Use two more bytes for the length
                          Write single byte value of 255 to OutputPosition
                          OutputPosition += 1
-  
+
                          MatchLength += 7 + 15
-  
+
                          If MatchLength < (1 << 16)
                              Write two-byte value MatchLength to OutputPosition
                              OutputPosition += 2
@@ -255,4 +262,4 @@ assert actual == decompressed
  Flags |= (1 << (32 – FlagCount)) - 1
  Write the 32-bit value Flags to FlagOutputPosition
  The final compressed size is the value of OutputPosition
-'''
+"""

@@ -1,0 +1,8 @@
+Cython
+black
+isort
+mypy
+pre-commit
+pytest
+tox
+wheel

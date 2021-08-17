@@ -1,25 +1,114 @@
+# Copyright: (c) 2021 Jordan Borean (@jborean93) <jborean93@gmail.com>
+# MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
 import pytest
 
-import base64
 import xca
 
+# https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-xca/f59ff967-3032-4331-b108-0d2b4c09ee27
+TEST_CASES = {
+    "simple": (
+        b"abcdefghijklmnopqrstuvwxyz",
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x50\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x45\x44\x04\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\xd8\x52\x3e\xd7\x94\x11\x5b\xe9\x19\x5f\xf9\xd6\x7c\xdf\x8d\x04"
+        b"\x00\x00\x00\x00",
+    ),
+    "pattern": (
+        b"abc" * 100,
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x30\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        b"\xa8\xdc\x00\x00\xff\x26\x01",
+    ),
+}
 
-def test_decompress():
-    # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-xca/f59ff967-3032-4331-b108-0d2b4c09ee27
-    expected = b'abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc'
-    compressed = base64.b64encode(base64.b16decode('00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a8dc0000ff2601'.upper())).decode()
 
-    plaintext_length = 300
+@pytest.mark.parametrize("uncompressed, expected", TEST_CASES.values(), ids=TEST_CASES.keys())
+def test_xpress_huffman_compress(uncompressed: bytes, expected: bytes) -> None:
+    xpress = xca.XpressHuffman()
+    actual = xpress.compress(uncompressed)
 
-    compressed_buffer = bytearray(compressed)
-    decompressed_buffer = bytearray(plaintext_length)
-    workspace = xca.XpressWorkspace.decompressor()
-
-    final_size = xca.decompress_buffer_progress(
-        compressed_buffer,
-        decompressed_buffer,
-        workspace)
-    )
-
-    actual = bytes(decompressed_buffer[:final_size])
+    assert isinstance(actual, bytes)
     assert actual == expected
+
+
+def test_xpress_huffman_compress_bytearray() -> None:
+    input, expected = next(iter(TEST_CASES.values()))
+
+    xpress = xca.XpressHuffman()
+    actual = xpress.compress(bytearray(input))
+    assert isinstance(actual, bytes)
+    assert actual == expected
+
+
+def test_xpress_huffman_compress_memoryview() -> None:
+    input, expected = next(iter(TEST_CASES.values()))
+    input = bytearray(input)
+
+    xpress = xca.XpressHuffman()
+    actual = xpress.compress(memoryview(input))
+    assert isinstance(actual, bytes)
+    assert actual == expected
+
+
+@pytest.mark.parametrize("expected, compressed", TEST_CASES.values(), ids=TEST_CASES.keys())
+def test_xpress_huffman_decompress(expected: bytes, compressed: bytes) -> None:
+    xpress = xca.XpressHuffman()
+    actual = xpress.decompress(compressed, len(expected))
+
+    assert isinstance(actual, bytes)
+    assert actual == expected
+
+
+def test_xpress_huffman_decompress_bytearray() -> None:
+    expected, input = next(iter(TEST_CASES.values()))
+
+    xpress = xca.XpressHuffman()
+    actual = xpress.decompress(bytearray(input), len(expected))
+    assert isinstance(actual, bytes)
+    assert actual == expected
+
+
+def test_xpress_huffman_decompress_memoryview() -> None:
+    expected, input = next(iter(TEST_CASES.values()))
+    input = bytearray(input)
+
+    xpress = xca.XpressHuffman()
+    actual = xpress.decompress(memoryview(input), len(expected))
+    assert isinstance(actual, bytes)
+    assert actual == expected
+
+
+def test_xpress_invalid_buffer() -> None:
+    xpress = xca.XpressHuffman()
+
+    with pytest.raises(xca.BadCompressionBuffer, match="The input buffer is ill-formed"):
+        xpress.decompress(b"invalid", 1024)

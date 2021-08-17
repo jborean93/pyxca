@@ -1,0 +1,13 @@
+include __dont_use_cython__.txt
+include CHANGELOG.md
+include LICENSE
+include LICENSE_MS
+exclude .coverage
+exclude .gitignore
+exclude .pre-commit-config.yaml
+recursive-include src/xca *.pyx
+recursive-include src/xca *.pxd
+recursive-include src/xca *.c
+recursive-include src/xca *.h
+recursive-include tests *
+recursive-exclude tests *.pyc

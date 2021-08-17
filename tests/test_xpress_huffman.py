@@ -1,9 +1,14 @@
 # Copyright: (c) 2021 Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import base64
+import os
+
 import pytest
 
 import xca
+
+from .conftest import WinCompressor
 
 # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-xca/f59ff967-3032-4331-b108-0d2b4c09ee27
 TEST_CASES = {
@@ -107,8 +112,28 @@ def test_xpress_huffman_decompress_memoryview() -> None:
     assert actual == expected
 
 
-def test_xpress_invalid_buffer() -> None:
+def test_xpress_huffman_invalid_buffer() -> None:
     xpress = xca.XpressHuffman()
 
     with pytest.raises(xca.BadCompressionBuffer, match="The input buffer is ill-formed"):
         xpress.decompress(b"invalid", 1024)
+
+
+@pytest.mark.parametrize("size", [1, 1024, 102, 23900, 56000, 8192])
+def test_xpress_huffman_compress_random(size: int, win_compress: WinCompressor) -> None:
+    data = os.urandom(size)
+
+    compressed = xca.XpressHuffman().compress(data)
+    actual = win_compress.decompress(compressed, len(data))
+
+    assert actual == data, f"Failed with input {base64.b64encode(data).decode()}"
+
+
+@pytest.mark.parametrize("size", [1, 1024, 102, 23900, 56000, 8192])
+def test_xpress_huffman_decompress_random(size: int, win_compress: WinCompressor) -> None:
+    data = os.urandom(size)
+
+    win_res = win_compress.compress(data)
+    actual = xca.XpressHuffman().decompress(win_res, len(data))
+
+    assert actual == data, f"Failed with input {base64.b64encode(data).decode()}"

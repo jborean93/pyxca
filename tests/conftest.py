@@ -59,25 +59,40 @@ class WinCompressor:
         self.ntdll.RtlNtStatusToDosError.argtypes = (ctypes.c_uint32,)
         self.ntdll.RtlNtStatusToDosError.restype = ctypes.c_uint32
 
+        self._workspace_sizes: typing.Dict[int, typing.Tuple[int, int]] = {}
+
+    def _get_workspace_size(
+        self,
+        algorithm: CompressionFormat,
+        engine: CompressionEngine,
+    ) -> typing.Tuple[int, int]:
+        compression_id = algorithm | engine
+        if compression_id in self._workspace_sizes:
+            return self._workspace_sizes[compression_id]
+
         compress_size = ctypes.c_uint32(0)
         decompress_size = ctypes.c_uint32(0)
         self.ntdll.RtlGetCompressionWorkSpaceSize(
-            CompressionFormat.xpress_huff | CompressionEngine.standard,
+            compression_id,
             ctypes.byref(compress_size),
             ctypes.byref(decompress_size),
         )
-        self.compress_size = compress_size.value
-        self.decompress_size = decompress_size.value
+        self._workspace_sizes[compression_id] = (compress_size.value, decompress_size.value)
+
+        return self._get_workspace_size(algorithm, engine)
 
     def compress(
         self,
+        algorithm: CompressionFormat,
         data: bytes,
     ) -> bytes:
-        workspace = ctypes.create_string_buffer(self.compress_size)
+        workspace_size = self._get_workspace_size(algorithm, CompressionEngine.standard)[0]
+        workspace = ctypes.create_string_buffer(workspace_size)
+
         output = ctypes.create_string_buffer(300 + len(data))
         compressed_size = ctypes.c_uint32(len(output))
         res = self.ntdll.RtlCompressBuffer(
-            CompressionFormat.xpress_huff | CompressionEngine.standard,
+            algorithm | CompressionEngine.standard,
             data,
             len(data),
             output,
@@ -93,14 +108,17 @@ class WinCompressor:
 
     def decompress(
         self,
+        algorithm: CompressionFormat,
         data: bytes,
         length: int,
     ) -> bytes:
-        workspace = ctypes.create_string_buffer(self.decompress_size)
+        workspace_size = self._get_workspace_size(algorithm, CompressionEngine.standard)[1]
+        workspace = ctypes.create_string_buffer(workspace_size)
+
         output = ctypes.create_string_buffer(length)
         decompressed_size = ctypes.c_uint32(length)
         res = self.ntdll.RtlDecompressBufferEx(
-            CompressionFormat.xpress_huff,
+            algorithm,
             output,
             length,
             data,

@@ -8,7 +8,7 @@ import pytest
 
 import xca
 
-from .conftest import WinCompressor
+from .conftest import CompressionFormat, WinCompressor
 
 # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-xca/f59ff967-3032-4331-b108-0d2b4c09ee27
 TEST_CASES = {
@@ -124,7 +124,7 @@ def test_xpress_huffman_compress_random(size: int, win_compress: WinCompressor) 
     data = os.urandom(size)
 
     compressed = xca.XpressHuffman().compress(data)
-    actual = win_compress.decompress(compressed, len(data))
+    actual = win_compress.decompress(CompressionFormat.xpress_huff, compressed, len(data))
 
     assert actual == data, f"Failed with input {base64.b64encode(data).decode()}"
 
@@ -133,7 +133,7 @@ def test_xpress_huffman_compress_random(size: int, win_compress: WinCompressor) 
 def test_xpress_huffman_decompress_random(size: int, win_compress: WinCompressor) -> None:
     data = os.urandom(size)
 
-    win_res = win_compress.compress(data)
+    win_res = win_compress.compress(CompressionFormat.xpress_huff, data)
     actual = xca.XpressHuffman().decompress(win_res, len(data))
 
     assert actual == data, f"Failed with input {base64.b64encode(data).decode()}"

@@ -47,7 +47,7 @@ junit_family = "xunit2"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = sanity,py36,py37,py38,py39
+envlist = sanity,py36,py37,py38,py39,py310
 skip_missing_interpreters = true
 isolated_build = True
 

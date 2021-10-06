@@ -69,6 +69,10 @@ jobs:
           version: cp39-macosx_x86_64
         - os: macOS-10.15
           version: cp39-macosx_arm64
+        - os: macOS-10.15
+          version: cp310-macosx_x86_64
+        - os: macOS-10.15
+          version: cp310-macosx_arm64
         - os: windows-2019
           version: cp36-win_amd64
         - os: windows-2019
@@ -85,6 +89,10 @@ jobs:
           version: cp39-win_amd64
         - os: windows-2019
           version: cp39-win32
+        - os: windows-2019
+          version: cp310-win_amd64
+        - os: windows-2019
+          version: cp310-win32
         - os: ubuntu-20.04
           version: cp36-manylinux_x86_64
         - os: ubuntu-20.04
@@ -101,6 +109,10 @@ jobs:
           version: cp39-manylinux_x86_64
         - os: ubuntu-20.04
           version: cp39-manylinux_i686
+        - os: ubuntu-20.04
+          version: cp310-manylinux_x86_64
+        - os: ubuntu-20.04
+          version: cp310-manylinux_i686
 
     steps:
     - uses: actions/download-artifact@v2
@@ -156,6 +168,7 @@ jobs:
         - 3.7
         - 3.8
         - 3.9
+        - '3.10'
         python-arch:
         - x86
         - x64
